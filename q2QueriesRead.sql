@@ -4,11 +4,9 @@ SELECT CourseName, Grade FROM PassedCoursesPerStudentRegId AS P, Courses AS C, S
 WHERE P.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.StudentId = 3831503 -- replace %1%
 AND P.DegreeId = 5123 -- replace %2%
-AND P.CourseId = C.CourseId
-ORDER BY CourseName, Grade;
+AND P.CourseId = C.CourseId;
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
--- Runs in approx 0.4 seconds with view to be runned 10 times
 WITH CompletedDegree AS (
 SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
@@ -23,7 +21,6 @@ AND GPA >= 9 -- replace with %1%
 GROUP BY StudentId ORDER BY StudentId;
 
 -- Q3
--- Runs in approx 15 seconds... to be runned 1 time
 WITH ActiveStudents AS (
     WITH CompletedDegree AS (
     SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
@@ -47,7 +44,6 @@ WHERE A.DegreeId = AF.DegreeId
 GROUP BY A.DegreeId, AF.Active ORDER BY A.DegreeId, AF.Active;
 
 --Q4 Give percentage of female students for all degrees of a department
--- Runs in approx 2.8 seconds... is to be runned 10 times CORRECT
 WITH StudentCount AS (
     SELECT COUNT(Students.StudentId) AS SC FROM Degrees, StudentRegistrationsToDegrees, Students
     WHERE Students.StudentId = StudentRegistrationsToDegrees.StudentId
@@ -82,7 +78,8 @@ AND Grade IS NOT NULL
 GROUP BY CourseId
 )
 SELECT PassedStudentCount.CourseId, (PSC / CAST(SC AS DECIMAL)) AS Percentage FROM StudentCount, PassedStudentCount
-WHERE StudentCount.CourseId = PassedStudentCount.CourseId;
+WHERE StudentCount.CourseId = PassedStudentCount.CourseId
+ORDER BY CourseId;
 
 --Q6 excellent students 2.0, highest grade of each course, etc
 -- Runs in approx 21 seconds... is to be runned 3 times
@@ -124,17 +121,3 @@ AC.CourseOfferId = CourseOffers.CourseOfferId AND
 CourseOffers.CourseId = Courses.CourseId AND
 (AC.StudentAssistantCount * 50 <= SC.StudentCount)
 ORDER BY SC.CourseOfferId;
-
--- All students that are registered for a degree but do not have any courses
-SELECT SD.StudentRegistrationId FROM CourseOffers AS CO, Courses AS C, StudentRegistrationsToDegrees AS SD, CourseRegistrations as CR
-WHERE CO.CourseOfferId = CR.CourseOfferId
-AND SD.StudentRegistrationId = CR.StudentRegistrationId
-AND C.CourseId = CO.CourseId
-AND C.DegreeId = SD.DegreeId;
-
-SELECT StudentRegistrationId, C.CourseId, Grade, C.DegreeId FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
-WHERE CO.CourseOfferId = CR.CourseOfferId
-AND SD.StudentRegistrationId = CR.StudentRegistrationId
-AND CO.CourseId = C.CourseId
-AND Grade IS NOT NULL
-ORDER BY Year, Quartile, CO.CourseOfferId;
