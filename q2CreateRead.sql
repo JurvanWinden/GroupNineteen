@@ -10,14 +10,7 @@ CREATE MATERIALIZED VIEW PassedCoursesPerStudentRegId AS (
 );
 
 CREATE MATERIALIZED VIEW StudentGPA AS (
-    SELECT StudentRegistrationId, SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL) AS GPA FROM PassedCoursesPerStudent
-    GROUP BY StudentRegistrationId
+    SELECT StudentRegistrationId, SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL) AS GPA FROM PassedCoursesPerStudentRegId
+    GROUP BY StudentRegistrationId ORDER BY StudentRegistrationId
 );
 
---Nieuwe GPA
-CREATE MATERIALIZED VIEW StudentGPA AS (
-    SELECT StudentId, SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL) AS GPA FROM PassedCoursesPerStudent AS PCS1
-	JOIN PassedCoursesPerStudent AS PCS2 ON PCS1.StudentId != PCS2.StudentId
-	WHERE PCS1.DegreeId = PCS2.DegreeId
-    GROUP BY StudentId
-);

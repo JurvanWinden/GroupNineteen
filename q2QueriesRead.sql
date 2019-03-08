@@ -1,20 +1,14 @@
 --The 8 queries to be answered
 -- Q1
--- Runs in approx 3 seconds... (with MATERIALIZED view) to be runned 100 times total 5 min
-SELECT CourseName, Grade FROM PassedCoursesPerStudent AS P, Courses AS C
-WHERE P.StudentId = 3831503
-AND P.DegreeId = 5123
-AND P.CourseId = C.CourseId;
-
-SELECT CourseName, Grade, SD.DegreeId FROM PassedCoursesPerStudentRegistrationId AS P, Courses AS C, StudentRegistrationsToDegrees as SD
+SELECT CourseName, Grade, SD.DegreeId FROM PassedCoursesPerStudentRegId AS P, Courses AS C, StudentRegistrationsToDegrees as SD
 WHERE P.StudentRegistrationId = SD.StudentRegistrationId
-AND SD.StudentId = 3831503
-AND SD.DegreeId = 5123
+AND SD.StudentId = 3831503 -- replace %1%
+AND SD.DegreeId = 5123 -- replace %2%
 AND P.CourseId = C.CourseId;
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 -- Runs in approx 0.4 seconds with view to be runned 10 times
-SELECT StudentId FROM StudentGPA
+SELECT StudentId FROM StudentGPA, StudentRegistrationsToDegrees
 WHERE GPA >= 9.4;
 
 -- Q3
@@ -146,5 +140,5 @@ SELECT StudentRegistrationId, C.CourseId, Grade, C.DegreeId FROM Courses AS C, C
 WHERE CO.CourseOfferId = CR.CourseOfferId
 AND SD.StudentRegistrationId = CR.StudentRegistrationId
 AND CO.CourseId = C.CourseId
-AND Grade < 5
+AND Grade IS NOT NULL
 ORDER BY Year, Quartile, CO.CourseOfferId;
