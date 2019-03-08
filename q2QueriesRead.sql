@@ -14,9 +14,9 @@ AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
 )
 SELECT CompletedDegree.StudentId FROM CompletedDegree
-LEFT OUTER JOIN FailedCoursesPerStudentRegId ON CompletedDegree.StudentRegistrationId = FailedCoursesPerStudentRegId.StudentRegistrationId
+LEFT OUTER JOIN CourseRegistrations ON CompletedDegree.StudentRegistrationId = CourseRegistrations.StudentRegistrationId
 LEFT OUTER JOIN StudentGPA ON StudentGPA.StudentRegistrationId = CompletedDegree.StudentRegistrationId
-WHERE FailedCoursesPerStudentRegId.StudentRegistrationId IS NULL
+WHERE CourseRegistrations.Grade < 5
 AND GPA >= 9 -- replace with %1%
 GROUP BY StudentId ORDER BY StudentId;
 
@@ -96,6 +96,19 @@ SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM BestGra
 GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId, NumberOfCoursesWhereExcellent;
 
 -- Q7
+
+
+WITH ActiveStudents AS (
+    WITH CompletedDegree AS (
+    SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
+    WHERE S.StudentRegistrationId = SD.StudentRegistrationId
+    AND SD.DegreeId = D.DegreeId
+    AND S.sumECTS >= TotalECTS
+    )
+    SELECT StudentId, DegreeId FROM StudentRegistrationsToDegrees AS SD
+    LEFT OUTER JOIN CompletedDegree ON SD.StudentRegistrationId = CompletedDegree.StudentRegistrationId
+    WHERE CompletedDegree.StudentRegistrationId IS NULL
+)
 SELECT sd.DegreeId, BirthYearStudent, Gender, AVG(Grade)
 FROM CourseRegistrations as cr, CourseOffers as co, Courses as c, Students as s, StudentRegistrationsToDegrees as sd
 WHERE cr.CourseOfferId = co.CourseOfferId
@@ -106,11 +119,11 @@ GROUP BY CUBE(sd.DegreeId, BirthYearStudent, Gender);
 
 -- Q8 List all CourseOffers which did not have enough student assistants
 -- Runs in approx 107 seconds... to be runned 1 time
-WITH SC AS (SELECT CourseRegistrations.CourseOfferId, COUNT(CourseRegistrations.StudentRegistrationId) as StudentCount
+WITH SC AS (SELECT CourseRegistrations.CourseOfferId, COUNT(CourseOfferId) as StudentCount
 FROM CourseRegistrations
 GROUP BY CourseRegistrations.CourseOfferId
 ),
-AC AS (SELECT CourseOfferId, COUNT(StudentAssistants.StudentRegistrationId) as StudentAssistantCount
+AC AS (SELECT CourseOfferId, COUNT(CourseOfferId) as StudentAssistantCount
 FROM StudentAssistants
 GROUP BY StudentAssistants.CourseOfferId
 )
@@ -119,5 +132,5 @@ FROM Courses, CourseOffers, SC, AC
 WHERE SC.CourseOfferId = AC.CourseOfferId AND
 AC.CourseOfferId = CourseOffers.CourseOfferId AND
 CourseOffers.CourseId = Courses.CourseId AND
-(AC.StudentAssistantCount * 50 <= SC.StudentCount)
+(AC.StudentAssistantCount * 50 < SC.StudentCount)
 ORDER BY SC.CourseOfferId;
