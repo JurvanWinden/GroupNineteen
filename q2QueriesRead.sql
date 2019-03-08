@@ -74,7 +74,7 @@ WHERE StudentCount.CourseId = PassedStudentCount.CourseId;
 --Q6 excellent students 2.0, highest grade of each course, etc
 -- Runs in approx 21 seconds... is to be runned 3 times
 WITH BestGrades AS (
-    SELECT StudentId FROM CourseOffers AS CO, PassedCoursesPerStudent AS P
+    SELECT StudentId FROM CourseOffers AS CO, PassedCoursesPerStudentRegId AS P
     WHERE CO.CourseId = P.CourseId
     AND Year = 2018
     AND Quartile = 1
