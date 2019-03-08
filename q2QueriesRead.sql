@@ -14,12 +14,12 @@ WHERE GPA >= 9.4;
 -- Q3
 -- Runs in approx 74 seconds... to be runned 1 time
 WITH ActiveStudents AS (
-    SELECT P.StudentId, D.DegreeId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, PassedCoursesPerStudent AS P, Courses AS C
-    WHERE (P.StudentId = SD.StudentId OR SD.StudentId NOT IN (SELECT StudentId FROM PassedCoursesPerStudent))
+    SELECT SD.StudentId, D.DegreeId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, PassedCoursesPerStudentRegId AS P, Courses AS C
+    WHERE (P.StudentRegistrationId = SD.StudentRegistrationId OR SD.StudentRegistrationId NOT IN (SELECT StudentRegistrationId FROM PassedCoursesPerStudent))
     AND SD.DegreeId = D.DegreeId
     AND P.CourseId = C.CourseId
     AND D.DegreeId = C.DegreeId
-    GROUP BY P.StudentId, TotalECTS, D.DegreeId
+    GROUP BY SD.StudentId, TotalECTS, D.DegreeId
     HAVING SUM(P.ECTS) < TotalECTS
 ),
 ActiveFemaleStudents AS (
