@@ -8,23 +8,21 @@ AND P.CourseId = C.CourseId;
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 -- Runs in approx 0.4 seconds with view to be runned 10 times
-SELECT StudentId FROM StudentGPA, StudentRegistrationsToDegrees AS SD, FailedCoursesPerStudentRegId AS F, PassedCoursesPerStudentRegId AS P, Degrees
-WHERE GPA >= 9.4
-AND SD.StudentRegistrationId = F.StudentRegistrationId
-AND SD.StudentRegistrationId = P.StudentRegistrationId
-AND SD.StudentRegistrationId NOT IN (SELECT StudentRegistrationId from FailedCoursesPerStudentRegId)
-AND SD.DegreeId = Degrees.DegreeId
-GROUP BY StudentId,TotalECTS
-HAVING SUM(P.ECTS) >= TotalECTS
-ORDER BY StudentId;
-
-
-
--- Select all active student registration ids
-
+WITH CompletedDegree AS (
+SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
+WHERE S.StudentRegistrationId = SD.StudentRegistrationId
+AND SD.DegreeId = D.DegreeId
+AND S.sum >= TotalECTS
+)
+SELECT CompletedDegree.StudentId FROM CompletedDegree
+LEFT OUTER JOIN FailedCoursesPerStudentRegId ON CompletedDegree.StudentRegistrationId = FailedCoursesPerStudentRegId.StudentRegistrationId
+LEFT OUTER JOIN StudentGPA ON StudentGPA.StudentRegistrationId = CompletedDegree.StudentRegistrationId
+WHERE FailedCoursesPerStudentRegId.StudentRegistrationId IS NULL
+AND GPA >= 9 -- replace with %1%
+GROUP BY StudentId ORDER BY StudentId;
 
 -- Q3
--- Runs in approx 74 seconds... to be runned 1 time
+-- Runs in approx 15 seconds... to be runned 1 time
 WITH ActiveStudents AS (
     WITH CompletedDegree AS (
     SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
