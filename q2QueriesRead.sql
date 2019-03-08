@@ -4,7 +4,8 @@ SELECT CourseName, Grade FROM PassedCoursesPerStudentRegId AS P, Courses AS C, S
 WHERE P.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.StudentId = 3831503 -- replace %1%
 AND P.DegreeId = 5123 -- replace %2%
-AND P.CourseId = C.CourseId;
+AND P.CourseId = C.CourseId
+ORDER BY CourseName, Grade;
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 -- Runs in approx 0.4 seconds with view to be runned 10 times
@@ -12,7 +13,7 @@ WITH CompletedDegree AS (
 SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
-AND S.sum >= TotalECTS
+AND S.sumECTS >= TotalECTS
 )
 SELECT CompletedDegree.StudentId FROM CompletedDegree
 LEFT OUTER JOIN FailedCoursesPerStudentRegId ON CompletedDegree.StudentRegistrationId = FailedCoursesPerStudentRegId.StudentRegistrationId
@@ -28,7 +29,7 @@ WITH ActiveStudents AS (
     SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
     WHERE S.StudentRegistrationId = SD.StudentRegistrationId
     AND SD.DegreeId = D.DegreeId
-    AND S.sum >= TotalECTS
+    AND S.sumECTS >= TotalECTS
     )
     SELECT StudentId, DegreeId FROM StudentRegistrationsToDegrees AS SD
     LEFT OUTER JOIN CompletedDegree ON SD.StudentRegistrationId = CompletedDegree.StudentRegistrationId
