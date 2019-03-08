@@ -21,7 +21,7 @@ WHERE GPA >= 9.4;
 -- Runs in approx 74 seconds... to be runned 1 time
 WITH ActiveStudents AS (
     SELECT P.StudentId, D.DegreeId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, PassedCoursesPerStudent AS P, Courses AS C
-    WHERE P.StudentId = SD.StudentId
+    WHERE (P.StudentId = SD.StudentId OR SD.StudentId NOT IN (SELECT StudentId FROM PassedCoursesPerStudent))
     AND SD.DegreeId = D.DegreeId
     AND P.CourseId = C.CourseId
     AND D.DegreeId = C.DegreeId
@@ -127,3 +127,24 @@ FROM StudentRegistrationsToDegrees, CourseRegistrations, BestGrades
 WHERE CourseRegistrations.CourseOfferId = BestGrades.CourseOfferId
 AND StudentRegistrationsToDegrees.StudentRegistrationId = CourseRegistrations.StudentRegistrationId
 AND Grade = BestGrades.Best GROUP BY StudentId HAVING COUNT(CourseRegistrations.StudentRegistrationId) >= 1 ORDER BY StudentId, NumberOfCoursesWhereExcellent;
+
+SELECT SD.StudentId FROM StudentRegistrationsToDegrees AS SD
+WHERE SD.StudentRegistrationId NOT IN (SELECT SD.StudentRegistrationId FROM CourseOffers AS CO, Courses AS C, StudentRegistrationsToDegrees AS SD, CourseRegistrations as CR
+WHERE CO.CourseOfferId = CR.CourseOfferId
+AND SD.StudentRegistrationId = CR.StudentRegistrationId
+AND C.CourseId = CO.CourseId
+AND C.DegreeId = SD.DegreeId);
+
+-- All students that are registered for a degree but do not have any courses
+SELECT SD.StudentRegistrationId FROM CourseOffers AS CO, Courses AS C, StudentRegistrationsToDegrees AS SD, CourseRegistrations as CR
+WHERE CO.CourseOfferId = CR.CourseOfferId
+AND SD.StudentRegistrationId = CR.StudentRegistrationId
+AND C.CourseId = CO.CourseId
+AND C.DegreeId = SD.DegreeId;
+
+SELECT StudentRegistrationId, C.CourseId, Grade, C.DegreeId FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
+WHERE CO.CourseOfferId = CR.CourseOfferId
+AND SD.StudentRegistrationId = CR.StudentRegistrationId
+AND CO.CourseId = C.CourseId
+AND Grade < 5
+ORDER BY Year, Quartile, CO.CourseOfferId;
