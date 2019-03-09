@@ -129,7 +129,7 @@ AC AS (SELECT CourseOfferId, COUNT(CourseOfferId) as StudentAssistantCount
 FROM StudentAssistants
 GROUP BY StudentAssistants.CourseOfferId
 )
-SELECT Courses.CourseName, CourseOffers.Year, CourseOffers.Quartile
+SELECT CourseOffers.CourseOfferId, Courses.CourseName, CourseOffers.Year, CourseOffers.Quartile
 FROM Courses, CourseOffers, SC, AC
 WHERE SC.CourseOfferId = AC.CourseOfferId AND
 AC.CourseOfferId = CourseOffers.CourseOfferId AND
