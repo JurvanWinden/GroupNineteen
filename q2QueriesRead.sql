@@ -97,6 +97,20 @@ WITH BestGrades AS (
 SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM BestGrades
 GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId, NumberOfCoursesWhereExcellent;
 
+WITH BestGrades AS (
+WITH NeededCourseOffers AS (
+    SELECT CourseOfferId FROM CourseOffers WHERE Year = 2018 AND Quartile = 1
+)
+SELECT NeededCourseOffers.CourseOfferId, MAX(Grade) AS Best FROM NeededCourseOffers
+JOIN CourseRegistrations ON NeededCourseOffers.CourseOfferId = CourseRegistrations.CourseOfferId
+GROUP BY NeededCourseOffers.CourseOfferId
+)
+SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM CourseRegistrations AS CR
+LEFT OUTER JOIN BestGrades ON BestGrades.CourseOfferId = CR.CourseOfferId
+LEFT OUTER JOIN StudentRegistrationsToDegrees ON CR.StudentRegistrationId = StudentRegistrationsToDegrees.StudentRegistrationId
+WHERE Best = Grade
+GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId;
+
 -- Q7
 
 
@@ -126,13 +140,16 @@ FROM CourseRegistrations
 GROUP BY CourseRegistrations.CourseOfferId
 ),
 AC AS (SELECT CourseOfferId, COUNT(CourseOfferId) as StudentAssistantCount
-FROM StudentAssistants
-GROUP BY StudentAssistants.CourseOfferId
+FROM StudentAssistants as S
+GROUP BY S.CourseOfferId
 )
-SELECT CourseOffers.CourseOfferId, Courses.CourseName, CourseOffers.Year, CourseOffers.Quartile
+SELECT CourseOffers.CourseOfferId, Courses.CourseName, CourseOffers.Year, CourseOffers.Quartile, AC.StudentAssistantCount * 50, SC.StudentCount
 FROM Courses, CourseOffers, SC, AC
 WHERE SC.CourseOfferId = AC.CourseOfferId AND
 AC.CourseOfferId = CourseOffers.CourseOfferId AND
 CourseOffers.CourseId = Courses.CourseId AND
 (AC.StudentAssistantCount * 50 < SC.StudentCount)
 ORDER BY SC.CourseOfferId;
+
+WITH BestGrades AS (WITH NeededCourseOffers AS (SELECT CourseOfferId FROM CourseOffers WHERE Year = 2018 AND Quartile = 1) SELECT NeededCourseOffers.CourseOfferId, MAX(Grade) AS Best FROM NeededCourseOffers JOIN CourseRegistrations ON NeededCourseOffers.CourseOfferId = CourseRegistrations.CourseOfferId GROUP BY NeededCourseOffers.CourseOfferId) SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM CourseRegistrations AS CR LEFT OUTER JOIN BestGrades ON BestGrades.CourseOfferId = CR.CourseOfferId LEFT OUTER JOIN StudentRegistrationsToDegrees ON CR.StudentRegistrationId = StudentRegistrationsToDegrees.StudentRegistrationId WHERE Best = Grade GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId;
+
