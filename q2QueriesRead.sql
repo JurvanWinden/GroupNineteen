@@ -1,9 +1,12 @@
 --The 8 queries to be answered
 -- Q1
-SELECT CourseName, Grade FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees as SD
+SELECT P.CourseName, P.Grade FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees as SD, CourseOffers AS CO, Courses AS C
 WHERE P.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.StudentId = 3831503 -- replace %1%
 AND SD.DegreeId = 5123 -- replace %2%
+AND P.CourseOfferId = CO.CourseOfferId
+AND C.CourseId = CO.CourseId
+AND C.DegreeId = SD.DegreeId;
 
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
