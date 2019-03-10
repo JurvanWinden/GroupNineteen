@@ -1,27 +1,30 @@
 --The 8 queries to be answered
 -- Q1
-SELECT P.CourseName, P.Grade FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees as SD, CourseOffers AS CO, Courses AS C
+SELECT  P.StudentRegistrationId, P.CourseName, P.Grade FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees as SD, CourseOffers AS CO, Courses AS C
 WHERE P.StudentRegistrationId = SD.StudentRegistrationId
-AND SD.StudentId = 3831503 -- replace %1%
-AND SD.DegreeId = 5123 -- replace %2%
+AND SD.StudentId = 1194819 -- replace %1%
+AND SD.DegreeId = 1659 -- replace %2%
 AND P.CourseOfferId = CO.CourseOfferId
 AND C.CourseId = CO.CourseId
-AND C.DegreeId = SD.DegreeId;
 
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 WITH CompletedDegree AS (
-SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
+SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
+AND G.GPA >= %1%
+AND G.StudentRegistrationId = S.StudentRegistrationId
+),
+FailedCourse AS (
+SELECT CD.StudentId FROM CompletedDegree AS CD
+LEFT OUTER JOIN CourseRegistrations AS CR ON CD.StudentRegistrationId = CR.StudentRegistrationId
+WHERE Grade < 5
 )
-SELECT CompletedDegree.StudentId FROM CompletedDegree
-LEFT OUTER JOIN CourseRegistrations ON CompletedDegree.StudentRegistrationId = CourseRegistrations.StudentRegistrationId
-LEFT OUTER JOIN StudentGPA ON StudentGPA.StudentRegistrationId = CompletedDegree.StudentRegistrationId
-WHERE CourseRegistrations.Grade < 5
-AND GPA >= 9 -- replace with %1%
-GROUP BY StudentId ORDER BY StudentId;
+SELECT CD.StudentId FROM CompletedDegree AS CD
+LEFT OUTER JOIN FailedCourse ON CD.StudentId = FailedCourse.StudentId
+WHERE FailedCourse.StudentId IS NULL ORDER BY CD.StudentId;
 
 -- Q3
 WITH ActiveStudents AS (

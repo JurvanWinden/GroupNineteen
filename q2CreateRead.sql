@@ -1,7 +1,7 @@
 -- Our views
 -- approx 1 minute
 CREATE MATERIALIZED VIEW PassedCoursesPerStudentRegId AS (
-    SELECT SD.StudentRegistrationId, CO.CourseOfferId, Year, Quartile, CourseName, Grade, ECTS FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
+    SELECT SD.StudentRegistrationId, SD.DegreeId, CO.CourseOfferId, Year, Quartile, CourseName, Grade, ECTS FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
     WHERE CO.CourseOfferId = CR.CourseOfferId
     AND SD.StudentRegistrationId = CR.StudentRegistrationId
     AND CO.CourseId = C.CourseId
@@ -22,3 +22,4 @@ CREATE MATERIALIZED VIEW StudentGPA AS (
     WHERE P.StudentRegistrationId = SD.StudentRegistrationId
     GROUP BY P.StudentRegistrationId, SD.DegreeId ORDER BY P.StudentRegistrationId
 );
+
