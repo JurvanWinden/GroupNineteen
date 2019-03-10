@@ -14,7 +14,7 @@ SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrati
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
-AND G.GPA >= 9
+AND G.GPA >= 9.9
 AND G.StudentRegistrationId = S.StudentRegistrationId
 ),
 FailedCourse AS (
@@ -24,7 +24,7 @@ WHERE Grade < 5
 )
 SELECT CD.StudentId FROM CompletedDegree AS CD
 LEFT OUTER JOIN FailedCourse ON CD.StudentRegistrationId = FailedCourse.StudentRegistrationId
-WHERE FailedCourse.StudentRegistrationId IS NULL ORDER BY CD.StudentId;
+WHERE FailedCourse.StudentRegistrationId IS NULL GROUP BY CD.StudentId ORDER BY CD.StudentId;
 
 -- Q3
 WITH ActiveStudents AS (
