@@ -1,12 +1,10 @@
 --The 8 queries to be answered
 -- Q1
-SELECT CourseName, Grade FROM PassedCoursesPerStudentRegId AS P, Courses AS C, StudentRegistrationsToDegrees as SD, CourseOffers as CO
+SELECT CourseName, Grade FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees as SD
 WHERE P.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.StudentId = 3831503 -- replace %1%
-AND P.DegreeId = 5123 -- replace %2%
-AND P.CourseId = C.CourseId
-AND CO.CourseId = C.CourseId
-ORDER BY Year, Quartile, CourseOfferId;
+AND SD.DegreeId = 5123 -- replace %2%
+
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 WITH CompletedDegree AS (
@@ -97,6 +95,7 @@ WITH BestGrades AS (
 SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM BestGrades
 GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId, NumberOfCoursesWhereExcellent;
 
+-- this one is correct for Q6 and runs in 60 seconds, times 3
 WITH BestGrades AS (
 WITH NeededCourseOffers AS (
     SELECT CourseOfferId FROM CourseOffers WHERE Year = 2018 AND Quartile = 1
