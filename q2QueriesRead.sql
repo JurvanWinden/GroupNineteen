@@ -14,17 +14,17 @@ SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrati
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
-AND G.GPA >= %1%
+AND G.GPA >= 9
 AND G.StudentRegistrationId = S.StudentRegistrationId
 ),
 FailedCourse AS (
-SELECT CD.StudentId FROM CompletedDegree AS CD
+SELECT CD.StudentRegistrationId FROM CompletedDegree AS CD
 LEFT OUTER JOIN CourseRegistrations AS CR ON CD.StudentRegistrationId = CR.StudentRegistrationId
 WHERE Grade < 5
 )
 SELECT CD.StudentId FROM CompletedDegree AS CD
-LEFT OUTER JOIN FailedCourse ON CD.StudentId = FailedCourse.StudentId
-WHERE FailedCourse.StudentId IS NULL ORDER BY CD.StudentId;
+LEFT OUTER JOIN FailedCourse ON CD.StudentRegistrationId = FailedCourse.StudentRegistrationId
+WHERE FailedCourse.StudentRegistrationId IS NULL ORDER BY CD.StudentId;
 
 -- Q3
 WITH ActiveStudents AS (
@@ -71,21 +71,20 @@ SELECT (FSC / CAST(SC AS DECIMAL)) AS Percentage FROM FemaleStudentCount, Studen
 -- Runs in appox 95 seconds... to be runned 5 times
 
 WITH StudentCount AS (
-SELECT CourseId, COUNT(CR.StudentRegistrationId) AS SC FROM CourseOffers AS CO, CourseRegistrations AS CR
-WHERE CO.CourseOfferId = CR.CourseOfferId
-AND Grade IS NOT NULL
-GROUP BY CourseId
+SELECT CO.CourseId, COUNT(CO.CourseId) AS SC FROM CourseOffers AS CO LEFT OUTER JOIN CourseRegistrations AS CR ON CO.CourseOfferId = CR.CourseOfferId
+WHERE Grade IS NOT NULL GROUP BY CO.CourseId
 ),
 PassedStudentCount AS (
-SELECT CourseId, COUNT(CR.StudentRegistrationId) AS PSC FROM CourseOffers AS CO, CourseRegistrations AS CR
-WHERE CO.CourseOfferId = CR.CourseOfferId
-AND Grade >= 5
-AND Grade IS NOT NULL
-GROUP BY CourseId
+SELECT CO.CourseId, COUNT(CO.CourseId) AS PSC FROM CourseOffers AS CO LEFT OUTER JOIN CourseRegistrations AS CR ON CO.CourseOfferId = CR.CourseOfferId
+WHERE Grade IS NOT NULL AND Grade >= 4 GROUP BY CO.CourseId
 )
-SELECT PassedStudentCount.CourseId, (PSC / CAST(SC AS DECIMAL)) AS Percentage FROM StudentCount, PassedStudentCount
-WHERE StudentCount.CourseId = PassedStudentCount.CourseId
-ORDER BY CourseId;
+SELECT PS.CourseId , (PSC / CAST (SC AS DECIMAL)) AS Percentage FROM StudentCount as S, Courses AS C, PassedStudentCount AS PS
+WHERE C.CourseId = S.CourseId
+AND PS.CourseId = S.CourseId
+ORDER BY PS.CourseId;
+
+
+
 
 --Q6 excellent students 2.0, highest grade of each course, etc
 -- Runs in approx 21 seconds... is to be runned 3 times

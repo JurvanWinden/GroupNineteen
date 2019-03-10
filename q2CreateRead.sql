@@ -23,3 +23,4 @@ CREATE MATERIALIZED VIEW StudentGPA AS (
     GROUP BY P.StudentRegistrationId, SD.DegreeId ORDER BY P.StudentRegistrationId
 );
 
+CREATE INDEX idx_Grade ON CourseRegistrations(CourseOfferId, Grade) WHERE Grade >= 4 AND Grade IS NOT NULL;
