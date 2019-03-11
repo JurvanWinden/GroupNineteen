@@ -1,13 +1,5 @@
---The 8 queries to be answered
 -- Q1
-SELECT  P.StudentRegistrationId, P.CourseName, P.Grade FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees as SD, CourseOffers AS CO, Courses AS C
-WHERE P.StudentRegistrationId = SD.StudentRegistrationId
-AND SD.StudentId = 1194819 -- replace %1%
-AND SD.DegreeId = 1659 -- replace %2%
-AND P.CourseOfferId = CO.CourseOfferId
-AND C.CourseId = CO.CourseId
-
-
+-- IS CORRECT (With index use)
 SELECT  CourseName, Grade FROM CourseRegistrations AS CR, StudentRegistrationsToDegrees as SD, CourseOffers AS CO, Courses AS C
 WHERE SD.StudentId = 1194819 -- replace %1%
 AND SD.DegreeId = 1659 -- replace %2%
@@ -17,15 +9,12 @@ AND C.CourseId = CO.CourseId
 AND Grade >= 5
 ORDER BY Year, Quartile, CR.CourseOfferId;
 
-
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 WITH CompletedDegree AS (
-SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
+SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
-AND G.GPA >= 9.9
-AND G.StudentRegistrationId = S.StudentRegistrationId
 ),
 FailedCourse AS (
 SELECT CD.StudentRegistrationId FROM CompletedDegree AS CD
@@ -39,7 +28,39 @@ WHERE FailedCourse.StudentRegistrationId IS NULL
 AND CompletedDegree.StudentRegistrationId = SD.StudentRegistrationId
 GROUP BY SD.StudentId ORDER BY SD.StudentId;
 
--- Q3
+
+WITH FailedCourse AS (
+SELECT CR.StudentRegistrationId FROM CourseRegistrations AS CR
+WHERE Grade < 5
+AND Grade IS NOT NULL
+),
+CompletedDegree AS (
+SELECT S.StudentRegistrationId, SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL) AS GPA FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, CourseRegistrations AS CR, CourseOffers AS CO, Courses AS C
+WHERE S.StudentRegistrationId = SD.StudentRegistrationId
+AND SD.DegreeId = D.DegreeId
+AND S.sumECTS >= TotalECTS
+AND CR.StudentRegistrationId = SD.StudentRegistrationId
+AND CO.CourseOfferId = CR.CourseOfferId
+AND C.CourseId = CO.CourseId
+AND Grade >= 5 GROUP BY S.StudentRegistrationId)
+SELECT StudentId FROM StudentRegistrationsToDegrees AS SD
+LEFT OUTER JOIN CompletedDegree AS C ON C.StudentRegistrationId = SD.StudentRegistrationId
+LEFT OUTER JOIN FailedCourse AS F ON F.StudentRegistrationId = SD.StudentRegistrationId
+WHERE F.StudentRegistrationId IS NULL
+AND C.StudentRegistrationId = SD.StudentRegistrationId
+GROUP BY StudentId
+ORDER BY StudentId;
+
+SELECT S.StudentRegistrationId, C.CourseId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, CourseRegistrations AS CR, CourseOffers AS CO, Courses AS C
+WHERE S.StudentRegistrationId = SD.StudentRegistrationId
+AND SD.DegreeId = D.DegreeId
+AND S.sumECTS >= TotalECTS
+AND CR.StudentRegistrationId = SD.StudentRegistrationId
+AND CO.CourseOfferId = CR.CourseOfferId
+AND C.CourseId = CO.CourseId
+AND Grade >= 5 ORDER BY S.StudentRegistrationId, C.CourseId;
+
+-- Q3 Give percentage of female active students per degree
 -- IS CORRECT
 WITH ActiveStudents AS (
     WITH CompletedDegree AS (
@@ -121,17 +142,15 @@ WITH ActiveStudents AS (
     AND SD.DegreeId = D.DegreeId
     AND S.sumECTS >= TotalECTS
     )
-    SELECT StudentId, DegreeId FROM StudentRegistrationsToDegrees AS SD
+    SELECT StudentId, DegreeId, SD.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD
     LEFT OUTER JOIN CompletedDegree ON SD.StudentRegistrationId = CompletedDegree.StudentRegistrationId
     WHERE CompletedDegree.StudentRegistrationId IS NULL
 )
-SELECT sd.DegreeId, BirthYearStudent, Gender, AVG(Grade)
-FROM CourseRegistrations as cr, CourseOffers as co, Courses as c, Students as s, StudentRegistrationsToDegrees as sd
-WHERE cr.CourseOfferId = co.CourseOfferId
-AND	co.CourseId = c.CourseId
-AND cr.StudentRegistrationId = sd.StudentRegistrationId
-AND s.StudentId = sd.StudentId
-GROUP BY CUBE(sd.DegreeId, BirthYearStudent, Gender);
+SELECT DegreeId, BirthYearStudent, Gender, AVG(Grade) AS AvgGrade
+FROM ActiveStudents AS A, Students AS S, CourseRegistrations AS CR
+WHERE  CR.StudentRegistrationId = A.StudentRegistrationId
+AND Grade >= 5
+GROUP BY DegreeId, CUBE(BirthYearStudent, Gender);
 
 -- Q8 List all CourseOffers which did not have enough student assistants
 -- Runs in approx 107 seconds... to be runned 1 time
