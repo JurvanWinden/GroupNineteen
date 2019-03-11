@@ -11,54 +11,21 @@ ORDER BY Year, Quartile, CR.CourseOfferId;
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 WITH CompletedDegree AS (
-SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
+SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
+AND G.GPA > 9
+AND G.StudentRegistrationId = S.StudentRegistrationId
 ),
 FailedCourse AS (
 SELECT CD.StudentRegistrationId FROM CompletedDegree AS CD
 LEFT OUTER JOIN CourseRegistrations AS CR ON CD.StudentRegistrationId = CR.StudentRegistrationId
 WHERE Grade < 5
 )
-SELECT SD.StudentId FROM StudentRegistrationsToDegrees AS SD
-LEFT OUTER JOIN FailedCourse ON SD.StudentRegistrationId = FailedCourse.StudentRegistrationId
-LEFT OUTER JOIN CompletedDegree ON CompletedDegree.StudentRegistrationId = SD.StudentRegistrationId
-WHERE FailedCourse.StudentRegistrationId IS NULL
-AND CompletedDegree.StudentRegistrationId = SD.StudentRegistrationId
-GROUP BY SD.StudentId ORDER BY SD.StudentId;
-
-
-WITH FailedCourse AS (
-SELECT CR.StudentRegistrationId FROM CourseRegistrations AS CR
-WHERE Grade < 5
-AND Grade IS NOT NULL
-),
-CompletedDegree AS (
-SELECT S.StudentRegistrationId, SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL) AS GPA FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, CourseRegistrations AS CR, CourseOffers AS CO, Courses AS C
-WHERE S.StudentRegistrationId = SD.StudentRegistrationId
-AND SD.DegreeId = D.DegreeId
-AND S.sumECTS >= TotalECTS
-AND CR.StudentRegistrationId = SD.StudentRegistrationId
-AND CO.CourseOfferId = CR.CourseOfferId
-AND C.CourseId = CO.CourseId
-AND Grade >= 5 GROUP BY S.StudentRegistrationId)
-SELECT StudentId FROM StudentRegistrationsToDegrees AS SD
-LEFT OUTER JOIN CompletedDegree AS C ON C.StudentRegistrationId = SD.StudentRegistrationId
-LEFT OUTER JOIN FailedCourse AS F ON F.StudentRegistrationId = SD.StudentRegistrationId
-WHERE F.StudentRegistrationId IS NULL
-AND C.StudentRegistrationId = SD.StudentRegistrationId
-GROUP BY StudentId
-ORDER BY StudentId;
-
-SELECT S.StudentRegistrationId, C.CourseId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, CourseRegistrations AS CR, CourseOffers AS CO, Courses AS C
-WHERE S.StudentRegistrationId = SD.StudentRegistrationId
-AND SD.DegreeId = D.DegreeId
-AND S.sumECTS >= TotalECTS
-AND CR.StudentRegistrationId = SD.StudentRegistrationId
-AND CO.CourseOfferId = CR.CourseOfferId
-AND C.CourseId = CO.CourseId
-AND Grade >= 5 ORDER BY S.StudentRegistrationId, C.CourseId;
+SELECT CD.StudentId FROM CompletedDegree AS CD
+LEFT OUTER JOIN FailedCourse ON CD.StudentRegistrationId = FailedCourse.StudentRegistrationId
+WHERE FailedCourse.StudentRegistrationId IS NULL GROUP BY CD.StudentId ORDER BY CD.StudentId;
 
 -- Q3 Give percentage of female active students per degree
 -- IS CORRECT
@@ -146,11 +113,10 @@ WITH ActiveStudents AS (
     LEFT OUTER JOIN CompletedDegree ON SD.StudentRegistrationId = CompletedDegree.StudentRegistrationId
     WHERE CompletedDegree.StudentRegistrationId IS NULL
 )
-SELECT DegreeId, BirthYearStudent, Gender, AVG(Grade) AS AvgGrade
-FROM ActiveStudents AS A, Students AS S, CourseRegistrations AS CR
-WHERE  CR.StudentRegistrationId = A.StudentRegistrationId
-AND Grade >= 5
-GROUP BY DegreeId, CUBE(BirthYearStudent, Gender);
+SELECT A.DegreeId, BirthYearStudent, Gender, AVG(GPA) AS AvgGrade
+FROM ActiveStudents AS A, Students AS S, StudentGPA
+WHERE A.StudentRegistrationId = StudentGPA.StudentRegistrationId
+GROUP BY A.DegreeId, CUBE(BirthYearStudent, Gender);
 
 -- Q8 List all CourseOffers which did not have enough student assistants
 -- Runs in approx 107 seconds... to be runned 1 time
@@ -170,5 +136,6 @@ CourseOffers.CourseId = Courses.CourseId AND
 (AC.StudentAssistantCount * 50 < SC.StudentCount)
 ORDER BY SC.CourseOfferId;
 
-WITH BestGrades AS (WITH NeededCourseOffers AS (SELECT CourseOfferId FROM CourseOffers WHERE Year = 2018 AND Quartile = 1) SELECT NeededCourseOffers.CourseOfferId, MAX(Grade) AS Best FROM NeededCourseOffers JOIN CourseRegistrations ON NeededCourseOffers.CourseOfferId = CourseRegistrations.CourseOfferId GROUP BY NeededCourseOffers.CourseOfferId) SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM CourseRegistrations AS CR LEFT OUTER JOIN BestGrades ON BestGrades.CourseOfferId = CR.CourseOfferId LEFT OUTER JOIN StudentRegistrationsToDegrees ON CR.StudentRegistrationId = StudentRegistrationsToDegrees.StudentRegistrationId WHERE Best = Grade GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId;
-
+SELECT S.StudentRegistrationId FROM StudentAssistants AS S, CourseRegistrations AS CR
+WHERE S.StudentRegistrationId = CR.StudentRegistrationId
+AND S.CourseOfferId = CR.CourseOfferId;

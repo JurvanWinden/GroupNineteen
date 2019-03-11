@@ -1,13 +1,12 @@
 -- Our views
 -- approx 1 minute
 CREATE MATERIALIZED VIEW PassedCoursesPerStudentRegId AS (
-    SELECT SD.StudentRegistrationId, SD.DegreeId, CO.CourseOfferId, Year, Quartile, CourseName, Grade, ECTS FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
+    SELECT SD.StudentRegistrationId, CO.CourseOfferId, Grade, ECTS FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
     WHERE CO.CourseOfferId = CR.CourseOfferId
     AND SD.StudentRegistrationId = CR.StudentRegistrationId
     AND CO.CourseId = C.CourseId
     AND Grade >= 5
     AND Grade IS NOT NULL
-    ORDER BY Year, Quartile, CourseOfferId
 );
 
 
@@ -20,7 +19,7 @@ CREATE MATERIALIZED VIEW SumECTS AS (
 CREATE MATERIALIZED VIEW StudentGPA AS (
     SELECT P.StudentRegistrationId, SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL) AS GPA FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees AS SD
     WHERE P.StudentRegistrationId = SD.StudentRegistrationId
-    GROUP BY P.StudentRegistrationId ORDER BY P.StudentRegistrationId;
+    GROUP BY P.StudentRegistrationId ORDER BY P.StudentRegistrationId
 );
 
 CREATE INDEX idx_Grade ON CourseRegistrations(StudentRegistrationId, Grade) WHERE Grade >= 5 AND Grade IS NOT NULL;
