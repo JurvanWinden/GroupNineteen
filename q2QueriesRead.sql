@@ -8,9 +8,19 @@ AND P.CourseOfferId = CO.CourseOfferId
 AND C.CourseId = CO.CourseId
 
 
+SELECT  CourseName, Grade FROM CourseRegistrations AS CR, StudentRegistrationsToDegrees as SD, CourseOffers AS CO, Courses AS C
+WHERE SD.StudentId = 1194819 -- replace %1%
+AND SD.DegreeId = 1659 -- replace %2%
+AND CR.StudentRegistrationId = SD.StudentRegistrationId
+AND CR.CourseOfferId = CO.CourseOfferId
+AND C.CourseId = CO.CourseId
+AND Grade >= 5
+ORDER BY Year, Quartile, CR.CourseOfferId;
+
+
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 WITH CompletedDegree AS (
-SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
+SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
@@ -22,11 +32,15 @@ SELECT CD.StudentRegistrationId FROM CompletedDegree AS CD
 LEFT OUTER JOIN CourseRegistrations AS CR ON CD.StudentRegistrationId = CR.StudentRegistrationId
 WHERE Grade < 5
 )
-SELECT CD.StudentId FROM CompletedDegree AS CD
-LEFT OUTER JOIN FailedCourse ON CD.StudentRegistrationId = FailedCourse.StudentRegistrationId
-WHERE FailedCourse.StudentRegistrationId IS NULL GROUP BY CD.StudentId ORDER BY CD.StudentId;
+SELECT SD.StudentId FROM StudentRegistrationsToDegrees AS SD
+LEFT OUTER JOIN FailedCourse ON SD.StudentRegistrationId = FailedCourse.StudentRegistrationId
+LEFT OUTER JOIN CompletedDegree ON CompletedDegree.StudentRegistrationId = SD.StudentRegistrationId
+WHERE FailedCourse.StudentRegistrationId IS NULL
+AND CompletedDegree.StudentRegistrationId = SD.StudentRegistrationId
+GROUP BY SD.StudentId ORDER BY SD.StudentId;
 
 -- Q3
+-- IS CORRECT
 WITH ActiveStudents AS (
     WITH CompletedDegree AS (
     SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
@@ -50,6 +64,7 @@ WHERE A.DegreeId = AF.DegreeId
 GROUP BY A.DegreeId, AF.Active ORDER BY A.DegreeId, AF.Active;
 
 --Q4 Give percentage of female students for all degrees of a department
+-- IS CORRECT
 WITH StudentCount AS (
     SELECT COUNT(Students.StudentId) AS SC FROM Degrees, StudentRegistrationsToDegrees, Students
     WHERE Students.StudentId = StudentRegistrationsToDegrees.StudentId
@@ -68,8 +83,7 @@ FemaleStudentCount AS (
 SELECT (FSC / CAST(SC AS DECIMAL)) AS Percentage FROM FemaleStudentCount, StudentCount;
 
 --Q5 Give percentage of passed students of all courses over all courseoffers with passing grade %1%
--- Runs in appox 95 seconds... to be runned 5 times
-
+-- IS CORRECT
 WITH StudentCount AS (
 SELECT CO.CourseId, COUNT(CO.CourseId) AS SC FROM CourseOffers AS CO LEFT OUTER JOIN CourseRegistrations AS CR ON CO.CourseOfferId = CR.CourseOfferId
 WHERE Grade IS NOT NULL GROUP BY CO.CourseId
@@ -83,24 +97,8 @@ WHERE C.CourseId = S.CourseId
 AND PS.CourseId = S.CourseId
 ORDER BY PS.CourseId;
 
-
-
-
 --Q6 excellent students 2.0, highest grade of each course, etc
--- Runs in approx 21 seconds... is to be runned 3 times
-WITH BestGrades AS (
-    SELECT SD.StudentId FROM CourseOffers AS CO, PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees AS SD
-    WHERE CO.CourseId = P.CourseId
-    AND SD.StudentRegistrationId = P.StudentRegistrationId
-    AND Year = 2018
-    AND Quartile = 1
-    GROUP BY SD.StudentId, Grade
-    HAVING Grade = MAX(Grade)
-)
-SELECT StudentId, COUNT(StudentId) AS NumberOfCoursesWhereExcellent FROM BestGrades
-GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId, NumberOfCoursesWhereExcellent;
-
--- this one is correct for Q6 and runs in 60 seconds, times 3
+-- IS CORRECT
 WITH BestGrades AS (
 WITH NeededCourseOffers AS (
     SELECT CourseOfferId FROM CourseOffers WHERE Year = 2018 AND Quartile = 1
@@ -116,8 +114,6 @@ WHERE Best = Grade
 GROUP BY StudentId HAVING COUNT(StudentId) >= 3 ORDER BY StudentId;
 
 -- Q7
-
-
 WITH ActiveStudents AS (
     WITH CompletedDegree AS (
     SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
