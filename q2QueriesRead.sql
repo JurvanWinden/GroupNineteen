@@ -11,12 +11,12 @@ ORDER BY Year, Quartile, CR.CourseOfferId;
 
 -- Q2 Select all excellent students GPA high, no failed courses in a degree
 WITH CompletedDegree AS (
-SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
+SELECT S.StudentRegistrationId, SD.DegreeId, SD.StudentId, G.GPA FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S, StudentGPA AS G
 WHERE S.StudentRegistrationId = SD.StudentRegistrationId
 AND SD.DegreeId = D.DegreeId
 AND S.sumECTS >= TotalECTS
-AND G.GPA > 9
-AND G.StudentRegistrationId = S.StudentRegistrationId
+AND G.GPA > 9.9
+AND G.StudentRegistrationId = SD.StudentRegistrationId
 ),
 FailedCourse AS (
 SELECT CD.StudentRegistrationId FROM CompletedDegree AS CD
