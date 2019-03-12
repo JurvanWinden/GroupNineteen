@@ -30,12 +30,6 @@ WHERE FailedCourse.StudentRegistrationId IS NULL GROUP BY CD.StudentId ORDER BY 
 -- Q3 Give percentage of female active students per degree
 -- IS CORRECT
 WITH ActiveStudents AS (
-    WITH CompletedDegree AS (
-    SELECT S.StudentRegistrationId FROM StudentRegistrationsToDegrees AS SD, Degrees AS D, SumECTS AS S
-    WHERE S.StudentRegistrationId = SD.StudentRegistrationId
-    AND SD.DegreeId = D.DegreeId
-    AND S.sumECTS >= TotalECTS
-    )
     SELECT StudentId, DegreeId FROM StudentRegistrationsToDegrees AS SD
     LEFT OUTER JOIN CompletedDegree ON SD.StudentRegistrationId = CompletedDegree.StudentRegistrationId
     WHERE CompletedDegree.StudentRegistrationId IS NULL
@@ -72,15 +66,11 @@ SELECT (FSC / CAST(SC AS DECIMAL)) AS Percentage FROM FemaleStudentCount, Studen
 
 --Q5 Give percentage of passed students of all courses over all courseoffers with passing grade %1%
 -- IS CORRECT
-WITH StudentCount AS (
-SELECT CO.CourseId, COUNT(CO.CourseId) AS SC FROM CourseOffers AS CO LEFT OUTER JOIN CourseRegistrations AS CR ON CO.CourseOfferId = CR.CourseOfferId
-WHERE Grade IS NOT NULL GROUP BY CO.CourseId
-),
-PassedStudentCount AS (
+WITH PassedStudentCount AS (
 SELECT CO.CourseId, COUNT(CO.CourseId) AS PSC FROM CourseOffers AS CO LEFT OUTER JOIN CourseRegistrations AS CR ON CO.CourseOfferId = CR.CourseOfferId
 WHERE Grade IS NOT NULL AND Grade >= 4 GROUP BY CO.CourseId
 )
-SELECT PS.CourseId , (PSC / CAST (SC AS DECIMAL)) AS Percentage FROM StudentCount as S, Courses AS C, PassedStudentCount AS PS
+SELECT PS.CourseId , (PSC / CAST (SC AS DECIMAL)) AS Percentage FROM StudentCountPerCourse as S, Courses AS C, PassedStudentCount AS PS
 WHERE C.CourseId = S.CourseId
 AND PS.CourseId = S.CourseId
 ORDER BY PS.CourseId;
@@ -120,22 +110,23 @@ GROUP BY A.DegreeId, CUBE(BirthYearStudent, Gender);
 
 -- Q8 List all CourseOffers which did not have enough student assistants
 -- Runs in approx 107 seconds... to be runned 1 time
-WITH SC AS (SELECT CourseRegistrations.CourseOfferId, COUNT(CourseOfferId) as StudentCount
-FROM CourseRegistrations
-GROUP BY CourseRegistrations.CourseOfferId
-),
-AC AS (SELECT CourseOfferId, COUNT(CourseOfferId) as StudentAssistantCount
-FROM StudentAssistants as S
-GROUP BY S.CourseOfferId
+WITH NeededCourseOffers AS (
+    WITH SC AS (SELECT CourseRegistrations.CourseOfferId, COUNT(CourseOfferId) as StudentCount
+    FROM CourseRegistrations
+    GROUP BY CourseRegistrations.CourseOfferId
+    ),
+    AC AS (SELECT CourseOfferId, COUNT(CourseOfferId) as StudentAssistantCount
+    FROM StudentAssistants as S
+    GROUP BY S.CourseOfferId ORDER BY CourseOfferId
+    )
+    SELECT SC.CourseOfferId FROM SC
+    LEFT OUTER JOIN AC ON SC.CourseOfferId = AC.CourseOfferId
+    WHERE AC.CourseOfferId IS NULL
+    OR (AC.StudentAssistantCount * 50 < SC.StudentCount) GROUP BY SC.CourseOfferId
 )
-SELECT CourseOffers.CourseOfferId, Courses.CourseName, CourseOffers.Year, CourseOffers.Quartile, AC.StudentAssistantCount * 50, SC.StudentCount
-FROM Courses, CourseOffers, SC, AC
-WHERE SC.CourseOfferId = AC.CourseOfferId AND
-AC.CourseOfferId = CourseOffers.CourseOfferId AND
-CourseOffers.CourseId = Courses.CourseId AND
-(AC.StudentAssistantCount * 50 < SC.StudentCount)
-ORDER BY SC.CourseOfferId;
+SELECT CourseName, Year, Quartile
+FROM Courses AS C, CourseOffers AS CO, NeededCourseOffers
+WHERE NeededCourseOffers.CourseOfferId = CO.CourseOfferId
+AND CO.CourseId = C.CourseId ORDER BY CO.CourseOfferId;
 
-SELECT S.StudentRegistrationId FROM StudentAssistants AS S, CourseRegistrations AS CR
-WHERE S.StudentRegistrationId = CR.StudentRegistrationId
-AND S.CourseOfferId = CR.CourseOfferId;
+WITH NeededCourseOffers AS (WITH SC AS (SELECT CourseRegistrations.CourseOfferId, COUNT(CourseOfferId) as StudentCount FROM CourseRegistrations GROUP BY CourseRegistrations.CourseOfferId), AC AS (SELECT CourseOfferId, COUNT(CourseOfferId) as StudentAssistantCount FROM StudentAssistants as S GROUP BY S.CourseOfferId ORDER BY CourseOfferId) SELECT SC.CourseOfferId FROM SC LEFT OUTER JOIN AC ON SC.CourseOfferId = AC.CourseOfferId WHERE AC.CourseOfferId IS NULL OR (AC.StudentAssistantCount * 50 < SC.StudentCount) GROUP BY SC.CourseOfferId) SELECT CourseName, Year, Quartile FROM Courses AS C, CourseOffers AS CO, NeededCourseOffers WHERE NeededCourseOffers.CourseOfferId = CO.CourseOfferId AND CO.CourseId = C.CourseId ORDER BY CO.CourseOfferId;
