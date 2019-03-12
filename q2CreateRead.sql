@@ -29,6 +29,14 @@ CREATE MATERIALIZED VIEW SumECTS AS (
 );
 
 CREATE MATERIALIZED VIEW StudentGPA AS (
+    WITH PassedCoursesPerStudentRegId AS (
+         SELECT SD.StudentRegistrationId, Grade, ECTS, SD.DegreeId FROM Courses AS C, CourseOffers AS CO, CourseRegistrations AS CR, StudentRegistrationsToDegrees AS SD
+         WHERE CO.CourseOfferId = CR.CourseOfferId
+         AND SD.StudentRegistrationId = CR.StudentRegistrationId
+         AND CO.CourseId = C.CourseId
+         AND Grade >= 5
+         AND Grade IS NOT NULL
+    )
     SELECT P.StudentRegistrationId, ROUND( SUM(ECTS * Grade) / CAST (SUM(ECTS) AS DECIMAL), 1 ) AS GPA FROM PassedCoursesPerStudentRegId AS P, StudentRegistrationsToDegrees AS SD
     WHERE P.StudentRegistrationId = SD.StudentRegistrationId
     GROUP BY P.StudentRegistrationId ORDER BY P.StudentRegistrationId
